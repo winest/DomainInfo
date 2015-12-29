@@ -1,0 +1,18 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "DomainInfo", "DomainInfo\DomainInfo.pyproj", "{9B097E6F-E43E-4EEA-96B8-69ABD804C895}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9B097E6F-E43E-4EEA-96B8-69ABD804C895}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B097E6F-E43E-4EEA-96B8-69ABD804C895}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
