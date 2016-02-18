@@ -14,23 +14,19 @@ from ExcelInfo import *
 
 class CWhois :
     class CWhoisQueryItem :
-        m_re = None
-        m_nRegexGroup = None
         def __init__( aSelf , aRegex , aRegexGroup ) :
             aSelf.m_re = aRegex
             aSelf.m_nRegexGroup = aRegexGroup
-
-    m_strCmd = None
-    m_lsFields = []   #Use list to keep the comparison order. Each element tuple is the form of <FeildName , CWhoisQueryItem>
-    m_bWriteDetail = False
-    m_dictCache = {}    #<key , value> = <domain , domain properties dict>
-    m_strRawResult = None
+   
     def __init__( aSelf , aWriteDetail = False ) :
         if platform.system().strip().lower() == "windows" :
             aSelf.m_strCmd = "_Tools/Windows/whois"
         else :
             aSelf.m_strCmd = "_Tools/Linux/whois"
 
+        aSelf.m_lsFields = []   #Use list to keep the comparison order. Each element tuple is the form of <FeildName , CWhoisQueryItem>
+        aSelf.m_dictCache = {}    #<key , value> = <domain , domain properties dict>
+        aSelf.m_strRawResult = None
         aSelf.m_bWriteDetail = aWriteDetail
 
     def AddField( aSelf , aName , aRegex , aRegexGroup ) :
