@@ -9,9 +9,8 @@ import fnmatch
 import time
 import hashlib
 import re
-from collections import defaultdict
-
 import xlsxwriter
+
 from HandleWhois import *
 from HandleThreatCrowd import *
 
@@ -20,7 +19,7 @@ from HandleThreatCrowd import *
 
 
 if __name__ == "__main__" :
-    logging.basicConfig( format="[%(asctime)s][%(levelname)s][%(process)d:%(thread)d][%(filename)s][%(funcName)s_%(lineno)d]: %(message)s" , level=logging.DEBUG )
+    logging.basicConfig( format="[%(asctime)s][%(levelname)s][%(process)04X:%(thread)04X][%(filename)s][%(funcName)s_%(lineno)d]: %(message)s" , level=logging.DEBUG )
 
     if len( sys.argv ) <= 1 :
         print( "Usage: {} <DomainsSperateBy\";\">".format( os.path.basename( sys.argv[0] ) ) )
@@ -36,10 +35,12 @@ if __name__ == "__main__" :
         g_config.read( "{}\\{}".format( g_strMainDir , "DomainInfo.ini" ) )
         logging.getLogger().setLevel( g_config["Debug"]["LogLevel"] )
     
+        #Get the list of domains
         g_setDomains = set( sys.argv[1].split( ";" ) )
         
         #Create excel if needed
         g_bWriteExcel = ( False != g_config.getboolean( "General" , "WriteExcel" ) )
+        g_excel = None
         g_excelFmt = { "Top" : None , "Vcenter" : None , "WrapTop" : None , "WrapVcenter" : None }
         if g_bWriteExcel :
             g_excel = xlsxwriter.Workbook( "{}\\DomainInfo-{}.xlsx".format(g_strMainDir , time.strftime("%Y%m%d_%H%M%S")) )

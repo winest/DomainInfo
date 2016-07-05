@@ -1,3 +1,4 @@
+#pip3 install xlsxwriter
 import os
 import sys
 import logging
@@ -85,46 +86,48 @@ class CWhois :
 
 def HandleWhois( aDomains , aConfig , aExcel , aExcelFmts ) :
     #Get config
+    bWriteExcel = ( False != aConfig.getboolean( "General" , "WriteExcel" ) )
     nTimeout = aConfig.getint( "General" , "QueryTimeout" ) / 1000
     nMaxRetryCnt = aConfig.getint( "General" , "QueryRetryCnt" )
-    bWriteExcel = ( False != aConfig.getboolean( "General" , "WriteExcel" ) )
     bWriteDetail = ( False != aConfig.getboolean( "Debug" , "WriteDetail" ) )
 
-    #Set interesting fields information
-    lsSheetInfo = [ CExcelSheetInfo( 0 , "A" , "Domain" , 32 , aExcelFmts["Vcenter"] ) ,
-                    CExcelSheetInfo( 1 , "B" , "Email" , 46 , aExcelFmts["WrapTop"] ) ,
-                    CExcelSheetInfo( 2 , "C" , "Country" , 8 , aExcelFmts["WrapTop"] ) ,
-                    CExcelSheetInfo( 3 , "D" , "Registrar" , 26 , aExcelFmts["WrapTop"] ) ,
-                    CExcelSheetInfo( 4 , "E" , "Registrant" , 26 , aExcelFmts["WrapTop"] ) ,
-                    CExcelSheetInfo( 5 , "F" , "CreationTime" , 20 , aExcelFmts["WrapTop"] ) ,
-                    CExcelSheetInfo( 6 , "G" , "UpdateTime" , 20 , aExcelFmts["WrapTop"] ) ,
-                    CExcelSheetInfo( 7 , "H" , "ExpireTime" , 20 , aExcelFmts["WrapTop"] ) ,
-                    CExcelSheetInfo( 8 , "I" , "Raw" , 100 , aExcelFmts["Top"] )
-                  ]
-
-    #Initialize sheet info
     if bWriteExcel :
         SHEET_NAME = "Whois"
+
+        #Set interesting fields information
+        sheetInfo = CExcelSheetInfo( SHEET_NAME )
+        sheetInfo.AddColumn( "Domain"       , CExcelColumnInfo( 0 , "Domain" , 32 , aExcelFmts["Vcenter"] ) )
+        sheetInfo.AddColumn( "Email"        , CExcelColumnInfo( 1 , "Email" , 46 , aExcelFmts["WrapTop"] ) )
+        sheetInfo.AddColumn( "Country"      , CExcelColumnInfo( 2 , "Country" , 8 , aExcelFmts["WrapTop"] ) )
+        sheetInfo.AddColumn( "Registrar"    , CExcelColumnInfo( 3 , "Registrar" , 26 , aExcelFmts["WrapTop"] ) )
+        sheetInfo.AddColumn( "Registrant"   , CExcelColumnInfo( 4 , "Registrant" , 26 , aExcelFmts["WrapTop"] ) )
+        sheetInfo.AddColumn( "CreationTime" , CExcelColumnInfo( 5 , "CreationTime" , 20 , aExcelFmts["WrapTop"] ) )
+        sheetInfo.AddColumn( "UpdateTime"   , CExcelColumnInfo( 6 , "UpdateTime" , 20 , aExcelFmts["WrapTop"] ) )
+        sheetInfo.AddColumn( "ExpireTime"   , CExcelColumnInfo( 7 , "ExpireTime" , 20 , aExcelFmts["WrapTop"] ) )
+        sheetInfo.AddColumn( "Raw"          , CExcelColumnInfo( 8 , "Raw" , 100 , aExcelFmts["Top"] ) )
+
+        #Initialize sheet by sheetInfo
         sheet = None
         for sheet in aExcel.worksheets() :
-            if sheet.get_name() == "Whois" :
+            if sheet.get_name() == SHEET_NAME :
                 break
         if sheet == None or sheet.get_name() != SHEET_NAME :
-            sheet = aExcel.add_worksheet( "Whois" )
+            sheet = aExcel.add_worksheet( SHEET_NAME )
 
-        #Set column layout in excel    
-        for info in lsSheetInfo :
+        #Set column layout in excel
+        for strColName , info in sheetInfo.GetColumns().items() :
             sheet.set_column( "{}:{}".format(info.strColId,info.strColId) , info.nColWidth , info.strColFormat )
+
 
     #Initialize CWhois object, be aware of the sequence of regex, put more accurate regex at first
     who = CWhois( bWriteDetail )
-    who.AddField( lsSheetInfo[1].strColName , re.compile(r"^.+\s+([^@, ]+@[^@, ]+\.[^@, ]+)\s*$" , re.IGNORECASE) , 1 )
-    who.AddField( lsSheetInfo[2].strColName , re.compile(r"^.*?Country\s*:\s*?(.+)\s*$" , re.IGNORECASE) , 1 )
-    who.AddField( lsSheetInfo[3].strColName , re.compile(r"^.*?(Registrar|Company)\s*?(Name|Organization)?:\s*?(.+)\s*$" , re.IGNORECASE) , 3 )
-    who.AddField( lsSheetInfo[4].strColName , re.compile(r"^.*?(Registrant|Company)\s*?(Name|Organization)?:\s*?(.+)\s*$" , re.IGNORECASE) , 3 )
-    who.AddField( lsSheetInfo[7].strColName , re.compile(r"^.*?Expir([ey][ds]?|ation)\s*(Date)?.*?(:\s*?|\s+?on\s+?)(.*[0-9]{4}.*)\s*$" , re.IGNORECASE) , 4 )
-    who.AddField( lsSheetInfo[6].strColName , re.compile(r"^.*?(Last(-|\s)?)?(Record\s)?Update.*?(Date)?(:\s*?|\s+?on\s+?)(.*[0-9]{4}.*)\s*$" , re.IGNORECASE) , 6 )
-    who.AddField( lsSheetInfo[5].strColName , re.compile(r"^.*?(Record)?\s*?(Creat.*?|Registration)\s*?(Date)?.*?(:\s*?|\s+?on\s+?)(.*[0-9]{4}.*)\s*" , re.IGNORECASE) , 5 )
+    who.AddField( "Email" , re.compile(r"^.+\s+([^@, ]+@[^@, ]+\.[^@, ]+)\s*$" , re.IGNORECASE) , 1 )
+    who.AddField( "Country" , re.compile(r"^.*?Country\s*:\s*?(.+)\s*$" , re.IGNORECASE) , 1 )
+    who.AddField( "Registrar" , re.compile(r"^.*?(Registrar|Company)\s*?(Name|Organization)?:\s*?(.+)\s*$" , re.IGNORECASE) , 3 )
+    who.AddField( "Registrant" , re.compile(r"^.*?(Registrant|Company)\s*?(Name|Organization)?:\s*?(.+)\s*$" , re.IGNORECASE) , 3 )
+    who.AddField( "ExpireTime" , re.compile(r"^.*?Expir([ey][ds]?|ation)\s*(Date)?.*?(:\s*?|\s+?on\s+?)(.*[0-9]{4}.*)\s*$" , re.IGNORECASE) , 4 )
+    who.AddField( "UpdateTime" , re.compile(r"^.*?(Last(-|\s)?)?(Record\s)?Update.*?(Date)?(:\s*?|\s+?on\s+?)(.*[0-9]{4}.*)\s*$" , re.IGNORECASE) , 6 )
+    who.AddField( "CreationTime" , re.compile(r"^.*?(Record)?\s*?(Creat.*?|Registration)\s*?(Date)?.*?(:\s*?|\s+?on\s+?)(.*[0-9]{4}.*)\s*" , re.IGNORECASE) , 5 )
 
     
 
@@ -133,7 +136,7 @@ def HandleWhois( aDomains , aConfig , aExcel , aExcelFmts ) :
     for strDomain in aDomains :
         print( "Checking Whois for {}".format( strDomain ) )
         if bWriteExcel :
-            sheet.write( uCount + 1 , lsSheetInfo[0].nColIndex , strDomain )        
+            sheet.write( uCount + 1 , sheetInfo.GetColumn("Domain").nColIndex , strDomain )        
 
         result = who.Query( strDomain , nTimeout , nMaxRetryCnt )
         if result :
@@ -141,24 +144,25 @@ def HandleWhois( aDomains , aConfig , aExcel , aExcelFmts ) :
                 print( "{} = {}".format( key , value ) )
                 if bWriteExcel :
                     nColIndex = -1
-                    for info in lsSheetInfo :
-                        if info.strColName == key :
+                    for strColName , info in sheetInfo.GetColumns().items() :
+                        if info.reColName.search( key ) != None :
                             nColIndex = info.nColIndex
                             break
                     sheet.write( uCount + 1 , nColIndex , os.linesep.join(value) )
             if bWriteExcel :
-                sheet.write( uCount + 1 , lsSheetInfo[-1].nColIndex , who.GetRawResult() )
+                sheet.write( uCount + 1 , sheetInfo.GetColumn("Raw").nColIndex , who.GetRawResult() )
 
         print( "\n" )
         uCount = uCount + 1
 
         
+
     #Make an excel table so one can find correlations easily
     if bWriteExcel :
         lsColumns = []
-        for info in lsSheetInfo :
-            lsColumns.append( { "header" : info.strColName } )
-        sheet.add_table( "{}1:{}{}".format(lsSheetInfo[0].strColId , lsSheetInfo[-1].strColId , uCount+1) , 
+        for i in range ( 0 , len(sheetInfo.GetColumns()) ) :
+            lsColumns.append( { "header" : sheetInfo.GetColNameByIndex(i) } )
+        sheet.add_table( "A1:{}{}".format(chr( ord('A')+len(sheetInfo.GetColumns())-1 ) , uCount+1) , 
                          { "header_row" : True , "columns" : lsColumns } 
                        )
         sheet.freeze_panes( 1 , 1 )

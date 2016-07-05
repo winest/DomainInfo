@@ -49,7 +49,8 @@ class CThreatCrowd :
         else :
             while aRetryCnt > 0 :
                 try :
-                    req = urllib.request.Request( "http://www.threatcrowd.org/searchApi/v2/domain/report/?domain={}".format(aDomain) )
+                    params = urllib.parse.urlencode( {"domain" : aDomain} )
+                    req = urllib.request.Request( "http://www.threatcrowd.org/searchApi/v2/domain/report/?{}".format(params) )
                     rsp = urllib.request.urlopen( req )
                     strEncoding = rsp.info().get( "Content-Encoding" )
                     if strEncoding and strEncoding.lower() == "gzip" :
@@ -110,45 +111,43 @@ class CThreatCrowd :
 
 def HandleThreatCrowd( aDomains , aConfig , aExcel , aExcelFmts ) :
     #Get config
+    bWriteExcel = ( False != aConfig.getboolean( "General" , "WriteExcel" ) )
     nTimeout = aConfig.getint( "General" , "QueryTimeout" ) / 1000
     nMaxRetryCnt = aConfig.getint( "General" , "QueryRetryCnt" )
-    bWriteExcel = ( False != aConfig.getboolean( "General" , "WriteExcel" ) )
     bWriteDetail = ( False != aConfig.getboolean( "Debug" , "WriteDetail" ) )
 
-    #Set interesting fields information
-    lsSheetInfo = [ CExcelSheetInfo( 0 , "A" , "Domain" , 32 , aExcelFmts["Vcenter"] ) ,
-                    CExcelSheetInfo( 1 , "B" , "Email" , 46 , aExcelFmts["WrapTop"] ) ,
-                    CExcelSheetInfo( 2 , "C" , "Hash" , 46 , aExcelFmts["WrapTop"] ) ,
-                    CExcelSheetInfo( 3 , "D" , "Resolution" , 46 , aExcelFmts["WrapTop"] ) ,
-                    CExcelSheetInfo( 4 , "E" , "Reference" , 32 , aExcelFmts["Top"] ) ,
-                    CExcelSheetInfo( 5 , "F" , "Raw" , 100 , aExcelFmts["WrapTop"] )
-                  ]
-    lsColNameMapping = { "emails" : "Email" ,
-                         "hashes" : "Hash" , 
-                         "resolutions" : "Resolution" ,
-                         "references" : "Reference"
-                       }
-
-    #Initialize sheet info
     if bWriteExcel :
         SHEET_NAME = "ThreatCrowd"
+
+        #Set interesting fields information
+        sheetInfo = CExcelSheetInfo( SHEET_NAME )
+        sheetInfo.AddColumn( "Domain"     , CExcelColumnInfo( 0 , "Domain" , 32 , aExcelFmts["Vcenter"] ) )
+        sheetInfo.AddColumn( "Email"      , CExcelColumnInfo( 1 , "emails" , 46 , aExcelFmts["WrapTop"] ) )
+        sheetInfo.AddColumn( "Hash"       , CExcelColumnInfo( 2 , "hashes" , 46 , aExcelFmts["WrapTop"] ) )
+        sheetInfo.AddColumn( "Resolution" , CExcelColumnInfo( 3 , "resolutions" , 46 , aExcelFmts["WrapTop"] ) )
+        sheetInfo.AddColumn( "Reference"  , CExcelColumnInfo( 4 , "references" , 32 , aExcelFmts["Top"] ) )
+        sheetInfo.AddColumn( "Raw"        , CExcelColumnInfo( 5 , "Raw" , 100 , aExcelFmts["WrapTop"] ) )
+
+        #Initialize sheet by sheetInfo
         sheet = None
         for sheet in aExcel.worksheets() :
             if sheet.get_name() == SHEET_NAME :
                 break
         if sheet == None or sheet.get_name() != SHEET_NAME :
             sheet = aExcel.add_worksheet( SHEET_NAME )
-        
-        #Set column layout in excel    
-        for info in lsSheetInfo :
+
+        #Set column layout in excel
+        for strColName , info in sheetInfo.GetColumns().items() :
             sheet.set_column( "{}:{}".format(info.strColId,info.strColId) , info.nColWidth , info.strColFormat )
+
+
 
     #Start to get domain information
     uCount = 0
     for strDomain in aDomains :
         print( "Checking ThreatCrowd for {}".format( strDomain ) )
         if bWriteExcel :
-            sheet.write( uCount + 1 , lsSheetInfo[0].nColIndex , strDomain )
+            sheet.write( uCount + 1 , sheetInfo.GetColumn("Domain").nColIndex , strDomain )
 
         threatcrowd = CThreatCrowd()
         result = threatcrowd.Query( strDomain , nTimeout , nMaxRetryCnt )
@@ -157,23 +156,25 @@ def HandleThreatCrowd( aDomains , aConfig , aExcel , aExcelFmts ) :
                 print( "{} = {}".format( key , value ) )
                 if bWriteExcel :
                     nColIndex = -1
-                    for info in lsSheetInfo :
-                        if info.strColName == lsColNameMapping[key] :
+                    for strColName , info in sheetInfo.GetColumns().items() :
+                        if info.reColName.search( key ) != None :
                             nColIndex = info.nColIndex
                             break
                     sheet.write( uCount + 1 , nColIndex , os.linesep.join(value) )
             if bWriteExcel :
-                sheet.write( uCount + 1 , lsSheetInfo[-1].nColIndex , threatcrowd.GetRawResult() )
+                sheet.write( uCount + 1 , sheetInfo.GetColumn("Raw").nColIndex , threatcrowd.GetRawResult() )
 
         print( "\n" )
         uCount = uCount + 1
         
+
+
     #Make an excel table so one can find correlations easily
     if bWriteExcel :
         lsColumns = []
-        for info in lsSheetInfo :
-            lsColumns.append( { "header" : info.strColName } )
-        sheet.add_table( "{}1:{}{}".format(lsSheetInfo[0].strColId , lsSheetInfo[-1].strColId , uCount+1) , 
+        for i in range ( 0 , len(sheetInfo.GetColumns()) ) :
+            lsColumns.append( { "header" : sheetInfo.GetColNameByIndex(i) } )
+        sheet.add_table( "A1:{}{}".format(chr( ord('A')+len(sheetInfo.GetColumns())-1 ) , uCount+1) , 
                          { "header_row" : True , "columns" : lsColumns } 
                        )
         sheet.freeze_panes( 1 , 1 )

@@ -26,9 +26,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DomainInfo.py" />
-    <Compile Include="ExcelInfo.py">
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="ExcelInfo.py" />
     <Compile Include="HandleThreatCrowd.py" />
     <Compile Include="HandleWhois.py">
       <SubType>Code</SubType>
