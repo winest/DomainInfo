@@ -28,7 +28,7 @@ class CThreatCrowd :
                 aSelf.m_lsLastResolved.append( aResolutionItem["last_resolved"] )
             else :
                 aSelf.m_strLastResolved = "Unknown"
-                aSelf.m_lsLastResolved.append( Unknown )
+                aSelf.m_lsLastResolved.append( "Unknown" )
         def __str__( aSelf ) :
             return "{} ({})".format( aSelf.m_strIpAddr , ", ".join(aSelf.m_lsLastResolved) )
         def __repr__( aSelf ) :
@@ -51,7 +51,7 @@ class CThreatCrowd :
                 try :
                     params = urllib.parse.urlencode( {"domain" : aDomain} )
                     req = urllib.request.Request( "http://www.threatcrowd.org/searchApi/v2/domain/report/?{}".format(params) )
-                    rsp = urllib.request.urlopen( req )
+                    rsp = urllib.request.urlopen( req , None , aTimeout )
                     strEncoding = rsp.info().get( "Content-Encoding" )
                     if strEncoding and strEncoding.lower() == "gzip" :
                         result = GzipFile( fileobj = rsp ).read()
@@ -63,7 +63,7 @@ class CThreatCrowd :
                     return aSelf.Parse( aDomain , result )
                 except ( urllib.error.HTTPError , urllib.error.URLError , http.client.HTTPException ) as err :
                     logging.warning( err )
-                    nRetryCnt -= 1
+                    aRetryCnt -= 1
                 except Exception as err :
                     print( traceback.format_exc() )
                     logging.exception( err )

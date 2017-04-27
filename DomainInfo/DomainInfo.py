@@ -23,15 +23,17 @@ if __name__ == "__main__" :
 
     if len( sys.argv ) <= 1 :
         print( "Usage: {} <DomainsSperateBy\";\">".format( os.path.basename( sys.argv[0] ) ) )
-        exit( 0 )
+        print( "Press any key to leave" )
+        input()
+        sys.exit( 0 )
 
     g_strMainDir = os.path.dirname( sys.argv[0] )
     if ( 0 == len( g_strMainDir ) ) :
         g_strMainDir = "."
-    g_config = configparser.ConfigParser()
 
     try :
         print( "Load config from {}\\{}".format( g_strMainDir , "DomainInfo.ini" ) )
+        g_config = configparser.ConfigParser()
         g_config.read( "{}\\{}".format( g_strMainDir , "DomainInfo.ini" ) )
         logging.getLogger().setLevel( g_config["Debug"]["LogLevel"] )
     
@@ -43,7 +45,9 @@ if __name__ == "__main__" :
         g_excel = None
         g_excelFmt = { "Top" : None , "Vcenter" : None , "WrapTop" : None , "WrapVcenter" : None }
         if g_bWriteExcel :
-            g_excel = xlsxwriter.Workbook( "{}\\DomainInfo-{}.xlsx".format(g_strMainDir , time.strftime("%Y%m%d_%H%M%S")) )
+            strOutputDir = "{}\\Output".format( g_strMainDir )
+            os.makedirs( strOutputDir , exist_ok=True )
+            g_excel = xlsxwriter.Workbook( "{}\\DomainInfo-{}.xlsx".format(strOutputDir , time.strftime("%Y%m%d_%H%M%S")) )
             g_excelFmt["Top"] = g_excel.add_format( {"valign" : "top"} )
             g_excelFmt["Vcenter"] = g_excel.add_format( {"valign" : "vcenter"} )
             g_excelFmt["WrapTop"] = g_excel.add_format( {"text_wrap" : 1 , "valign" : "top"} )
